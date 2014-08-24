@@ -85,7 +85,7 @@ var buildRequest = function(cur_request, requestname, instance_state) {
 
 var runRequest = function(requestname, instance_state, onfinish) {
     if (requestname === "noop") {
-	onfinish();
+	process.nextTick(onfinish);
 	return;
     }
     var request = def.Requests[requestname];
@@ -122,7 +122,7 @@ var runRequest = function(requestname, instance_state, onfinish) {
     //console.log("Making call:");
     //console.log(req);
     if (req.cancel === true) {
-	onfinish();
+	process.nextTick(onfinish);
     } else {
 	var startTime = process.hrtime();
 	makeRequest(req, body, function(res) {
