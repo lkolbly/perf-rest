@@ -55,8 +55,6 @@ process.on('exit', function(code) {
 var buildRequest = function(cur_request, requestname, instance_state) {
     // Check to see if there's an oncall function
     var request = deepcopy(def.Requests[requestname]);
-    //console.log(requestname);
-    //console.log(request);
     if (request.oncall !== undefined) {
 	request.oncall(instance_state, {});
     }
@@ -107,8 +105,6 @@ var runRequest = function(requestname, instance_state, onfinish) {
     while (parents.length > 0) {
 	var name = parents.pop();
 	req = buildRequest(req, name, instance_state);
-	//console.log("Applied "+name+", built:");
-	//console.log(req);
     }
     req = buildRequest(req, requestname, instance_state);
 
@@ -119,8 +115,6 @@ var runRequest = function(requestname, instance_state, onfinish) {
     }
 
     // Now, run it
-    //console.log("Making call:");
-    //console.log(req);
     if (req.cancel === true) {
 	process.nextTick(onfinish);
     } else {
@@ -139,6 +133,21 @@ var runRequest = function(requestname, instance_state, onfinish) {
 	    onfinish();
 	});
     }
+};
+
+var processDelay = function(delayfn, instance_state) {
+    var delay = 0;
+    if (delayfn !== undefined) {
+	var t = Object.prototype.toString.call(delayfn);
+	if (t === "[object Number]") {
+	    delay = delayfn;
+	} else if (t === "[object Function]") {
+	    delay = delayfn(instance_state);
+	} else {
+	    // We dunno what it is...
+	}
+    }
+    return delay;
 };
 
 var numClients = 0;
@@ -165,17 +174,7 @@ var onEnterState = function(engine, statename, instance_state) {
 	}
 
 	// We've found our destination
-	var delay = 0;
-	if (state.transition[n].delay !== undefined) {
-	    var t = Object.prototype.toString.call(state.transition[n].delay);
-	    if (t === "[object Number]") {
-		delay = state.transition[n].delay;
-	    } else if (t === "[object Function]") {
-		delay = state.transition[n].delay(instance_state);
-	    } else {
-		// We dunno what it is...
-	    }
-	}
+	var delay = processDelay(state.transition[n].delay, instance_state);
 	engine.scheduleState(state.transition[n].dest, delay, instance_state);
     });
 };
@@ -197,27 +196,9 @@ var StateEngine = {
 };
 
 var clients = [];
-for (var i=0; i<1000; i++) {
-    //StateEngine.sc
-    //clients.push(new def.Instance());
-    //numClients++;
-    //log({numClients: numClients});
-}
 
 // Start working...
 for (var i=0; i<def.numClients; i++) {
-    //init(clients[i]);
-	var delay = 0;
-	if (def.States.preinit.delay !== undefined) {
-	    var t = Object.prototype.toString.call(def.States.preinit.delay);
-	    if (t === "[object Number]") {
-		delay = def.States.preinit.delay;
-	    } else if (t === "[object Function]") {
-		delay = def.States.preinit.delay({});
-	    } else {
-		// We dunno what it is...
-	    }
-	}
-    //console.log("preinit delay: "+delay);
+    var delay = processDelay(def.States.preinit.delay, {});
     StateEngine.scheduleState("preinit", delay, {});
 }
